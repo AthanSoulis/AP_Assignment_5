@@ -26,7 +26,7 @@ evalTop e = eval e M.empty
 simplify e =
   case e of
     Oper Plus (Const c1) (Const c2) -> Const(c1+c2)
-    Oper Minus (Const c1) (Const c2) -> Const(c1+c2)
+    Oper Minus (Const c1) (Const c2) -> Const(c1-c2) -- bug was here
     Oper Times (Const c1) (Const c2) -> Const(c1*c2)
     Oper op e1 e2 -> Oper op (simplify e1) (simplify e2)
     Let v e body ->
