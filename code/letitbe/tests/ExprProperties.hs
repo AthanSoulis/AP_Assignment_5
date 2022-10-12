@@ -28,6 +28,15 @@ prop_eval_simplify :: Expr -> Property
 prop_eval_simplify x = --E.evalTop x === (E.evalTop $ E.simplify x) but:
    --simplify can eval expr that evalTop cant
    --specifically multiplication with 0 and unused let binding
+   collect (len x 0) $
    let simp = (E.simplify x) in let res = (E.evalTop x) in case res of
-         Left _ -> True === True --no way to check this
-         Right _ -> E.evalTop simp === res
+            Left _ -> True === True --no way to check this
+            Right _ -> E.evalTop simp === res
+
+--determines the "length" of an expression
+len x n = case x of
+   Const _ -> n + 1
+   Var _   -> n + 1
+   Oper _ e1 e2 ->  n + 1 + len e1 0 + len e2 0
+   Let _ e1 e2 -> n + 1 + len e1 0 + len e2 0
+
