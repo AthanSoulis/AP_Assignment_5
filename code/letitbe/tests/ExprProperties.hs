@@ -24,6 +24,8 @@ exprN n = oneof
 instance Arbitrary Expr where
    arbitrary = sized exprN
 
+--asignment was really unspecific in what exactly was required
+--the current implementation makes sense to me but involves a lot of guesswork
 prop_eval_simplify :: Expr -> Property
 prop_eval_simplify x = --E.evalTop x === (E.evalTop $ E.simplify x) but:
    --simplify can eval expr that evalTop cant

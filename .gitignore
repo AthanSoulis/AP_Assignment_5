@@ -23,3 +23,4 @@ cabal.project.local~
 .ghc.environment.*
 *.cabal
 stack.yaml.lock
+code.zip
