@@ -130,7 +130,7 @@ prop_size_empty() ->
     eqc:equals(bst:size(eval(eval(empty()))), 0).
 
 prop_size_delete_soft() ->
-    ?FORALL({K, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
+    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
         bst:size(delete(eval(eval(K)), eval(eval(T)))) =< bst:size(eval(eval(T)))).
 
 prop_size_delete_strong() ->
