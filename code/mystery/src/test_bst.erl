@@ -158,7 +158,7 @@ prop_insert_model() ->
             equals(model(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))),
                    sorted_insert(eval(eval(K)), eval(eval(V)), delete_key(eval(eval(K)), model(eval(eval(T))))))).
 
-%should perhaps use model(find...)
+%should probably use model(find...)
 prop_find_model() -> 
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
         equals(find(eval(eval(K)), eval(eval(T))),
@@ -172,10 +172,10 @@ prop_delete_model() ->
         equals(model(delete(eval(eval(K)), eval(eval(T)))),
         sorted_delete(eval(eval(K)), model(eval(eval(T)))))).
 
-% prop_union_model() -> 
-%     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
-%         equals(model(union(eval(eval(T1)), eval(eval(T2)))),
-%         sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
+prop_union_model() -> 
+    ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+        equals(model(union(eval(eval(T2)), eval(eval(T1)))),
+        sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
 
 
 
