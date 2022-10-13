@@ -85,6 +85,18 @@ prop_find_post_absent() ->
             {atom_key(), bst(atom_key(), int_value())},
             eqc:equals(find(eval(eval(K)), delete(eval(eval(K)), eval(eval(T)))), nothing)).
 
+prop_delete_post() -> 
+    ?FORALL({K1, K2, T},
+            {atom_key(), atom_key(), bst(atom_key(), int_value())},
+            eqc:equals(find(eval(eval(K2)), delete(eval(eval(K1)), eval(eval(T)))),
+                       case eval(eval(K1)) =:= eval(eval(K2)) of
+                           true ->  nothing;
+                           false -> find(eval(eval(K2)), eval(eval(T)))
+                       end)).
+
+prop_union_post() -> nothing.
+
+
 
 %%% -- metamorphic properties
 
@@ -98,15 +110,15 @@ prop_size_empty() ->
     % size (empty()) == 0
     eqc:equals(bst:size(eval(eval(empty()))), 0).
 
-prop_size_delete() ->
-    % ∀ k t. size (delete k t) == (size t) -1
-    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
-        % eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))),
-        %                case bst:size(eval(eval(T))) =:= bst:size(eval(eval(empty()))) of
-        %                    true ->  0;
-        %                    false -> bst:size(eval(eval(T)))-1
-        %                end)).
-            eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))))).
+% prop_size_delete() ->
+%     % ∀ k t. size (delete k t) == (size t) -1
+%     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
+%         % eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))),
+%         %                case bst:size(eval(eval(T))) =:= bst:size(eval(eval(empty()))) of
+%         %                    true ->  0;
+%         %                    false -> bst:size(eval(eval(T)))-1
+%         %                end)).
+%             eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))))).
 
 obs_equals(T1, T2) ->
      eqc:equals(to_sorted_list(eval(eval(T1))), to_sorted_list(eval(eval(T2)))).
@@ -124,7 +136,6 @@ prop_insert_insert() ->
 
 
 %%% -- Model based properties
-%model({found, _}) -> [];
 model(T) -> to_sorted_list(T).
 
 prop_insert_model() ->
@@ -132,14 +143,14 @@ prop_insert_model() ->
             equals(model(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))),
                    sorted_insert(eval(eval(K)), eval(eval(V)), delete_key(eval(eval(K)), model(eval(eval(T))))))).
 
-%should use model(find...)
+%should perhaps use model(find...)
 prop_find_model() -> 
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
         equals(find(eval(eval(K)), eval(eval(T))),
         sorted_find(eval(eval(K)), model(eval(eval(T)))))).
 
 prop_empty_model() -> 
-        eqc:equals(model(empty()), model(sorted_empty())).
+        eqc:equals(model(empty()), sorted_empty()).
 
 prop_delete_model() -> 
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
@@ -147,7 +158,7 @@ prop_delete_model() ->
         sorted_delete(eval(eval(K)), model(eval(eval(T)))))).
 
 % prop_union_model() -> 
-%     ?FORALL({T2, T1}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+%     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
 %         equals(model(union(eval(eval(T1)), eval(eval(T2)))),
 %         sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
 
@@ -168,7 +179,7 @@ sorted_find(Key, [X|Xs]) ->
         _ -> sorted_find(Key, Xs)
     end.
 
-sorted_empty() -> leaf. %[].
+sorted_empty() -> [].
 
 sorted_delete(Key, L) ->
     [{K, V} || {K, V} <- L, K =/= Key].
