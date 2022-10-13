@@ -121,19 +121,11 @@ prop_size_empty() ->
     eqc:equals(bst:size(eval(eval(empty()))), 0).
 
 prop_size_delete() ->
-    % ∀ k t. size (delete k t) == (size t) -1
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
-            case bst:size(eval(eval(T))) > 0 of 
-                true -> eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))));
-                false -> eqc:equals(0, bst:size(delete(eval(eval(K)), eval(eval(T)))))
-            end).
-
-        % eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))),
-        %                case bst:size(eval(eval(T))) =:= bst:size(eval(eval(empty()))) of
-        %                    true ->  0;
-        %                    false -> bst:size(eval(eval(T)))-1
-        %                end)).
-        % eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))))).
+                case find(eval(eval(K)), eval(eval(T))) of 
+                    nothing -> bst:size(delete(eval(eval(K)),eval(eval(T)))) == bst:size(eval(eval(T)));
+                    _ -> eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))), bst:size(eval(eval(T)))-1)
+                end).
 
 obs_equals(T1, T2) ->
      eqc:equals(to_sorted_list(eval(eval(T1))), to_sorted_list(eval(eval(T2)))).
@@ -146,6 +138,15 @@ prop_insert_insert() ->
                        case eval(eval(K1)) =:= eval(eval(K2)) of
                            true ->  insert(eval(eval(K1)), eval(eval(V1)), eval(eval(T)));
                            false -> insert(eval(eval(K2)), eval(eval(V2)), insert(eval(eval(K1)), eval(eval(V1)), eval(eval(T))))
+                       end)).
+
+prop_delete_delete() ->
+    ?FORALL({K1, K2, T},
+            {atom_key(), atom_key(), bst(atom_key(), int_value())},
+            obs_equals(delete(eval(eval(K1)), delete(eval(eval(K2)), eval(eval(T)))),
+                       case eval(eval(K1)) =:= eval(eval(K2)) of
+                           true ->  delete(eval(eval(K1)), eval(eval(T)));
+                           false -> delete(eval(eval(K2)), delete(eval(eval(K1)), eval(eval(T))))
                        end)).
 
 
