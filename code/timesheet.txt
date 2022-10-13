@@ -17,5 +17,5 @@ Warmup: 0m
 Development: 0m
 Tests: 0m
 Report: 0m
-Other:  # if more than 1h total, please elaborate in comment
+Other: 0m # if more than 1h total, please elaborate in comment
 # Thanks!

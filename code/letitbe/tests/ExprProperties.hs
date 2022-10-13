@@ -18,8 +18,8 @@ exprN n = oneof
             , Oper Minus x y
             , Oper Times x y
             , Let a x y] --chances of actually using a inside y are astronomically low
-        return $ z
-   ]
+        return $ z       --except for Var "" which seems to be generated more often
+   ]                     --which can be tested using sample $ exprN n
 
 instance Arbitrary Expr where
    arbitrary = sized exprN

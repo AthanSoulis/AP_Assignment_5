@@ -36,6 +36,7 @@ simplify e =
     Oper op e1 e2 -> Oper op (simplify e1) (simplify e2)
     Let v e body -> --can simplify expr that cannot be evaluated
       if usesVar v body then Let v (simplify e) (simplify body) else simplify body where
+          --checks wehter a variable is used inside the body of a let expression
           usesVar v body = case body of 
             Var z -> v == z
             Oper _ e1 e2 -> usesVar v e1 || usesVar v e2
