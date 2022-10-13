@@ -53,7 +53,6 @@ prop_insert_valid() ->
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             valid (insert(eval(eval(K)), eval(eval(V)), eval(eval(T))))).
 
-%should also stay valid for other operations
 prop_empty_valid() ->
     eqc:equals(valid(empty()), valid(leaf)).
 
@@ -104,7 +103,17 @@ prop_find_post_absent() ->
             eqc:equals(find(eval(eval(K)), delete(eval(eval(K)), eval(eval(T)))), nothing)).
 
 
-prop_union_post() -> nothing.
+prop_union_post() -> 
+    ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+        begin
+            L1 = to_sorted_list(eval(eval(T1))),
+            L2 = to_sorted_list(eval(eval(T2))),
+            T3 = union(eval(eval(T1)), eval(eval(T2))),
+            L3 = to_sorted_list(T3),
+            %not sure if this is allowed since this is kinda mixing model based testing into it
+            %but it's considerably easier to do than writing it properly
+            equals(L3, sorted_union(L2, L1))
+        end).
 
 
 
