@@ -54,6 +54,15 @@ prop_insert_valid() ->
             valid (insert(eval(eval(K)), eval(eval(V)), eval(eval(T))))).
 
 %should also stay valid for other operations
+prop_empty_valid() ->
+    eqc:equals(valid(empty()), valid(leaf)).
+
+prop_delete_valid() ->
+    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
+            valid (delete(eval(eval(K)), eval(eval(T))))).
+prop_union_valid() ->
+    ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+        valid(union (eval(eval(T1)), eval(eval(T2))))).
 
 
 
@@ -67,6 +76,15 @@ prop_insert_post() ->
             eqc:equals(find(eval(eval(K2)), insert(eval(eval(K1)), eval(eval(V)), eval(eval(T)))),
                        case eval(eval(K1)) =:= eval(eval(K2)) of
                            true ->  {found, eval(eval(V))};
+                           false -> find(eval(eval(K2)), eval(eval(T)))
+                       end)).
+
+prop_delete_post() ->
+    ?FORALL({K1, K2, T},
+            {atom_key(), atom_key(), bst(atom_key(), int_value())},
+            eqc:equals(find(eval(eval(K2)), delete(eval(eval(K1)), eval(eval(T)))),
+                       case eval(eval(K1)) =:= eval(eval(K2)) of
+                           true -> nothing;
                            false -> find(eval(eval(K2)), eval(eval(T)))
                        end)).
 
@@ -85,14 +103,6 @@ prop_find_post_absent() ->
             {atom_key(), bst(atom_key(), int_value())},
             eqc:equals(find(eval(eval(K)), delete(eval(eval(K)), eval(eval(T)))), nothing)).
 
-prop_delete_post() -> 
-    ?FORALL({K1, K2, T},
-            {atom_key(), atom_key(), bst(atom_key(), int_value())},
-            eqc:equals(find(eval(eval(K2)), delete(eval(eval(K1)), eval(eval(T)))),
-                       case eval(eval(K1)) =:= eval(eval(K2)) of
-                           true ->  nothing;
-                           false -> find(eval(eval(K2)), eval(eval(T)))
-                       end)).
 
 prop_union_post() -> nothing.
 
@@ -110,15 +120,20 @@ prop_size_empty() ->
     % size (empty()) == 0
     eqc:equals(bst:size(eval(eval(empty()))), 0).
 
-% prop_size_delete() ->
-%     % ∀ k t. size (delete k t) == (size t) -1
-%     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
-%         % eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))),
-%         %                case bst:size(eval(eval(T))) =:= bst:size(eval(eval(empty()))) of
-%         %                    true ->  0;
-%         %                    false -> bst:size(eval(eval(T)))-1
-%         %                end)).
-%             eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))))).
+prop_size_delete() ->
+    % ∀ k t. size (delete k t) == (size t) -1
+    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
+            case bst:size(eval(eval(T))) > 0 of 
+                true -> eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))));
+                false -> eqc:equals(0, bst:size(delete(eval(eval(K)), eval(eval(T)))))
+            end).
+
+        % eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))),
+        %                case bst:size(eval(eval(T))) =:= bst:size(eval(eval(empty()))) of
+        %                    true ->  0;
+        %                    false -> bst:size(eval(eval(T)))-1
+        %                end)).
+        % eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))))).
 
 obs_equals(T1, T2) ->
      eqc:equals(to_sorted_list(eval(eval(T1))), to_sorted_list(eval(eval(T2)))).
