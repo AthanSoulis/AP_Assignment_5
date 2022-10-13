@@ -59,6 +59,8 @@ prop_insert_valid() ->
 
 %%% -- postcondition properties
 
+% For two given keys they are either equal and you find the value one of them has inserted or they are different
+% and you output the result of a search (which will be nothing) 
 prop_insert_post() ->
     ?FORALL({K1, K2, V, T},
             {atom_key(), atom_key(), int_value(), bst(atom_key(), int_value())},
@@ -68,15 +70,20 @@ prop_insert_post() ->
                            false -> find(eval(eval(K2)), eval(eval(T)))
                        end)).
 
+
+% Find the value of a key that was just inserted
 prop_find_post_present() ->
   % ∀ k v t. find k (insert k v t) === {found, v}
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             eqc:equals(find(eval(eval(K)), insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))),
                        {found, eval(eval(V))})).
 
-prop_find_post_absent() -> true.
-     % ∀ k t. find k (delete k t) === nothing
-
+% When you search for a key after you have deleted it, it should result nothing
+prop_find_post_absent() ->
+    % ∀ k t. find k (delete k t) === nothing
+    ?FORALL({K, T},
+            {atom_key(), bst(atom_key(), int_value())},
+            eqc:equals(find(eval(eval(K)), delete(eval(eval(K)), eval(eval(T)))), nothing)).
 
 
 %%% -- metamorphic properties
@@ -86,6 +93,20 @@ prop_size_insert() ->
     % ∀ k v t. size (insert k v t) >= size t
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             bst:size(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))) >= bst:size(eval(eval(T)))).
+
+prop_size_empty() ->
+    % size (empty()) == 0
+    eqc:equals(bst:size(eval(eval(empty()))), 0).
+
+prop_size_delete() ->
+    % ∀ k t. size (delete k t) == (size t) -1
+    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
+        % eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))),
+        %                case bst:size(eval(eval(T))) =:= bst:size(eval(eval(empty()))) of
+        %                    true ->  0;
+        %                    false -> bst:size(eval(eval(T)))-1
+        %                end)).
+            eqc:equals(bst:size(eval(eval(T))) - 1, bst:size(delete(eval(eval(K)), eval(eval(T)))))).
 
 obs_equals(T1, T2) ->
      eqc:equals(to_sorted_list(eval(eval(T1))), to_sorted_list(eval(eval(T2)))).
