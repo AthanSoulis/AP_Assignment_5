@@ -34,6 +34,8 @@ bst(Key, Value) ->
                      KVS]}
                     ).
 
+%implement quality check for gen
+%perhaps also letshrink
 
 
 %%% we are unsure why eval needs to be used twice in the properties
@@ -101,12 +103,33 @@ prop_insert_insert() ->
 
 
 %%% -- Model based properties
+%model({found, _}) -> [];
 model(T) -> to_sorted_list(T).
 
 prop_insert_model() ->
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             equals(model(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))),
                    sorted_insert(eval(eval(K)), eval(eval(V)), delete_key(eval(eval(K)), model(eval(eval(T))))))).
+
+%should use model(find...)
+prop_find_model() -> 
+    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
+        equals(find(eval(eval(K)), eval(eval(T))),
+        sorted_find(eval(eval(K)), model(eval(eval(T)))))).
+
+prop_empty_model() -> 
+        eqc:equals(model(empty()), model(sorted_empty())).
+
+prop_delete_model() -> 
+    ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
+        equals(model(delete(eval(eval(K)), eval(eval(T)))),
+        sorted_delete(eval(eval(K)), model(eval(eval(T)))))).
+
+% prop_union_model() -> 
+%     ?FORALL({T2, T1}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+%         equals(model(union(eval(eval(T1)), eval(eval(T2)))),
+%         sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
+
 
 
 -spec delete_key(Key, [{Key, Value}]) -> [{Key, Value}].
@@ -116,6 +139,22 @@ delete_key(Key, KVS) -> [ {K, V} || {K, V} <- KVS, K =/= Key ].
 sorted_insert(Key, Value, [{K, V} | Rest]) when K < Key ->
     [{K, V} | sorted_insert(Key, Value, Rest)];
 sorted_insert(Key, Value, KVS) -> [{Key, Value} | KVS].
+
+sorted_find(_, []) -> nothing;
+sorted_find(Key, [X|Xs]) ->
+    case X of
+        {Key, Value} -> {found, Value};
+        _ -> sorted_find(Key, Xs)
+    end.
+
+sorted_empty() -> leaf. %[].
+
+sorted_delete(Key, L) ->
+    [{K, V} || {K, V} <- L, K =/= Key].
+
+sorted_union(T1, []) -> T1;
+sorted_union(T1, [{Key, Value}|Xs]) -> sorted_union(sorted_insert(Key, Value, sorted_delete(Key, T1)), Xs).
+
 
 
 
