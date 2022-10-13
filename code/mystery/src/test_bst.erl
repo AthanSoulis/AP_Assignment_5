@@ -120,10 +120,17 @@ prop_union_post() ->
 %%% -- metamorphic properties
 
 %% the size is larger after an insert
-prop_size_insert() ->
+prop_size_insert_soft() ->
     % ∀ k v t. size (insert k v t) >= size t
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             bst:size(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))) >= bst:size(eval(eval(T)))).
+
+prop_size_insert_strong() -> 
+    ?FORALL({K,V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
+        case find(eval(eval(K)), eval(eval(T))) of 
+            nothing -> bst:size(insert(eval(eval(K)), eval(eval(V)),eval(eval(T)))) == bst:size(eval(eval(T))) + 1;
+            _ -> eqc:equals(bst:size(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))), bst:size(eval(eval(T))))
+        end).
 
 prop_size_empty() ->
     % size (empty()) == 0
