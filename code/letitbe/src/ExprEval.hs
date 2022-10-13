@@ -28,8 +28,11 @@ simplify :: Expr -> Expr
 simplify e =
   case e of
     Oper Plus (Const 0) x -> x
+    Oper Plus x (Const 0) -> x
     Oper Times (Const 0) _ -> (Const 0) --can simplify expr that cannot be evaluated
+    Oper Times _ (Const 0) -> (Const 0)
     Oper Times (Const 1) x -> x
+    Oper Times x (Const 1) -> x
     Oper Plus (Const c1) (Const c2) -> Const(c1+c2)
     Oper Minus (Const c1) (Const c2) -> Const(c1-c2) -- bug was here
     Oper Times (Const c1) (Const c2) -> Const(c1*c2)
