@@ -129,12 +129,23 @@ prop_size_empty() ->
     % size (empty()) == 0
     eqc:equals(bst:size(eval(eval(empty()))), 0).
 
-prop_size_delete() ->
+prop_size_delete_soft() ->
+    ?FORALL({K, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
+        bst:size(delete(eval(eval(K)), eval(eval(T)))) =< bst:size(eval(eval(T)))).
+
+prop_size_delete_strong() ->
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
                 case find(eval(eval(K)), eval(eval(T))) of 
                     nothing -> bst:size(delete(eval(eval(K)),eval(eval(T)))) == bst:size(eval(eval(T)));
                     _ -> eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))), bst:size(eval(eval(T)))-1)
                 end).
+
+prop_size_union() ->
+    ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+        bst:size(union(eval(eval(T1)), eval(eval(T2)))) =< bst:size(eval(eval(T1))) + bst:size(eval(eval(T2)))
+    ).
+
+
 
 obs_equals(T1, T2) ->
      eqc:equals(to_sorted_list(eval(eval(T1))), to_sorted_list(eval(eval(T2)))).
