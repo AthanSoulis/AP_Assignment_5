@@ -1,3 +1,4 @@
+#haskell
 dist
 dist-*
 cabal-dev
@@ -24,3 +25,7 @@ cabal.project.local~
 *.cabal
 stack.yaml.lock
 code.zip
+
+#erlang
+*.beam
+*.eqc*
