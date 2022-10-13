@@ -11,11 +11,11 @@
 
 
 %%% A non-symbolic generator for bst, parameterised by key and value generators
-bst(Key, Value) ->
-    ?LET(KVS, eqc_gen:list({Key, Value}),
-         lists:foldl(fun({K,V}, T) -> insert(K, V, T) end,
-                     empty(),
-                     KVS)).
+% bst(Key, Value) ->
+%     ?LET(KVS, eqc_gen:list({Key, Value}),
+%          lists:foldl(fun({K,V}, T) -> insert(K, V, T) end,
+%                      empty(),
+%                      KVS)).
 
 % example key and value generators
 int_key() -> eqc_gen:int().
@@ -23,18 +23,37 @@ atom_key() -> eqc_gen:elements([a,b,c,d,e,f,g,h]).
 
 int_value() -> eqc_gen:int().
 
+%%% symbolic generator for bst
+bst(Key, Value) ->
+    ?LET(KVS, eqc_gen:list({Key, Value}),
+         %{call, lists, foldl, [...]}
+         %lists:foldl(
+         {call, lists, foldl, [            fun({K,V}, T) -> {call, bst, insert, [K, V, T]} end,
+                     {call, bst, empty, []},
+                     KVS]}
+                    %)
+                    ).
+
 
 %%% invariant properties
 
 % all generated bst are valid
 prop_arbitrary_valid() ->
-    ?FORALL(T, bst(atom_key(), int_value()),
-            valid(T)).
+    ?FORALL(ST, bst(atom_key(), int_value()),
+        begin
+            T = eval(ST),
+            valid(eqc_symbolic:eval(T))
+        end).
 
 % if we insert into a valid tree it stays valid
 prop_insert_valid() ->
-    ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
-            valid (insert(K, V, T))).
+    ?FORALL({SK, SV, ST}, {atom_key(), int_value(), bst(atom_key(), int_value())},
+        begin
+            K = eval(SK),
+            V = eval(SV),
+            T = eval(ST),
+            valid (insert(eqc_symbolic:eval(K), eqc_symbolic:eval(V), eqc_symbolic:eval(T)))
+        end).
 
 
 
@@ -43,18 +62,18 @@ prop_insert_valid() ->
 prop_insert_post() ->
     ?FORALL({K1, K2, V, T},
             {atom_key(), atom_key(), int_value(), bst(atom_key(), int_value())},
-            eqc:equals(find(K2, insert(K1, V, T)),
-                       case K1 =:= K2 of
-                           true ->  {found, V};
-                           false -> find(K2, T)
+            eqc:equals(find(eqc_symbolic:eval(K2), insert(eqc_symbolic:eval(K1), eqc_symbolic:eval(V), eqc_symbolic:eval(T))),
+                       case eqc_symbolic:eval(K1) =:= eqc_symbolic:eval(K2) of
+                           true ->  {found, eqc_symbolic:eval(V)};
+                           false -> find(eqc_symbolic:eval(K2), eqc_symbolic:eval(T))
                        end)).
 
 
 prop_find_post_present() ->
   % ∀ k v t. find k (insert k v t) === {found, v}
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
-            eqc:equals(find(K, insert(K, V, T)),
-                       {found, V})).
+            eqc:equals(find(eqc_symbolic:eval(K), insert(eqc_symbolic:eval(K), eqc_symbolic:eval(V), eqc_symbolic:eval(T))),
+                       {found, eqc_symbolic:eval(V)})).
 
 
 prop_find_post_absent() -> true.
@@ -67,21 +86,21 @@ prop_find_post_absent() -> true.
 prop_size_insert() ->
     % ∀ k v t. size (insert k v t) >= size t
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
-            bst:size(insert(K, V, T)) >= bst:size(T)).
+            bst:size(insert(eqc_symbolic:eval(K), eqc_symbolic:eval(V), eqc_symbolic:eval(T))) >= bst:size(eqc_symbolic:eval(T))).
 
 
 
 obs_equals(T1, T2) ->
-     eqc:equals(to_sorted_list(T1), to_sorted_list(T2)).
+     eqc:equals(to_sorted_list(eqc_symbolic:eval(T1)), to_sorted_list(eqc_symbolic:eval(T2))).
 
 prop_insert_insert() ->
     ?FORALL({K1, K2, V1, V2, T},
             {atom_key(), atom_key(), int_value(), int_value(),
              bst(atom_key(), int_value())},
-            obs_equals(insert(K1, V1, insert(K2, V2, T)),
-                       case K1 =:= K2 of
-                           true ->  insert(K1, V1, T);
-                           false -> insert(K2, V2, insert(K1, V1, T))
+            obs_equals(insert(eqc_symbolic:eval(K1), eqc_symbolic:eval(V1), insert(eqc_symbolic:eval(K2), eqc_symbolic:eval(V2), eqc_symbolic:eval(T))),
+                       case eqc_symbolic:eval(K1) =:= eqc_symbolic:eval(K2) of
+                           true ->  insert(eqc_symbolic:eval(K1), eqc_symbolic:eval(V1), eqc_symbolic:eval(T));
+                           false -> insert(eqc_symbolic:eval(K2), eqc_symbolic:eval(V2), insert(eqc_symbolic:eval(K1), eqc_symbolic:eval(V1), eqc_symbolic:eval(T)))
                        end)).
 
 
@@ -91,8 +110,8 @@ model(T) -> to_sorted_list(T).
 
 prop_insert_model() ->
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
-            equals(model(insert(K, V, T)),
-                   sorted_insert(K, V, delete_key(K, model(T))))).
+            equals(model(insert(eqc_symbolic:eval(K), eqc_symbolic:eval(V), eqc_symbolic:eval(T))),
+                   sorted_insert(eqc_symbolic:eval(K), eqc_symbolic:eval(V), delete_key(eqc_symbolic:eval(K), model(eqc_symbolic:eval(T)))))).
 
 
 -spec delete_key(Key, [{Key, Value}]) -> [{Key, Value}].
