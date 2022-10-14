@@ -23,16 +23,18 @@ atom_key() -> eqc_gen:elements([a,b,c,d,e,f,g,h]).
 
 int_value() -> eqc_gen:int().
 
-%%% symbolic generator for bst
+%% symbolic generator for bst
 bst(Key, Value) ->
     ?LET(KVS, eqc_gen:list({Key, Value}),
-         %{call, lists, foldl, [...]}
-         %lists:foldl(
          {call, lists, foldl, [            
                     fun({K,V}, T) -> {call, bst, insert, [K, V, T]} end,
                      {call, bst, empty, []},
                      KVS]}
                     ).
+
+% bst(Key, Value) ->
+%     ?LET(KVS, eqc_gen:list({Key, Value}),
+%         {call, test_bst}).
 
 %implement quality check for gen
 %perhaps also letshrink
@@ -204,6 +206,16 @@ prop_union_model() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         equals(model(union(eval(eval(T2)), eval(eval(T1)))),
         sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
+
+
+
+prop_measure() ->
+    ?FORALL({T}, {bst(atom_key(), int_value())},
+        eqc:collect(bst:size(eval(eval(T))), true)).
+
+prop_aggregate() ->
+    ?FORALL({T}, {bst(atom_key(), int_value())},
+        eqc:aggregate(eqc_symbolic:call_names(T), true)).
 
 
 
