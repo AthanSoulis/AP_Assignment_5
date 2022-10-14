@@ -5,6 +5,9 @@ import Test.QuickCheck
 import ExprAst
 import qualified ExprEval as E
 
+--replacing Var arbitrary (and a <- arbitrary) with something like Var elements ['A'..'E']
+--remedies the issue mentioned below but also reduces generality
+--both versions work fine
 exprN :: Int -> Gen Expr
 exprN 0 = oneof [fmap Const arbitrary, fmap Var arbitrary]
 exprN n = oneof 
@@ -12,7 +15,7 @@ exprN n = oneof
    , fmap Var arbitrary
    , do x <- exprN (n `div` 2)
         y <- exprN (n `div` 2)
-        a <- arbitrary
+        a <- arbitrary -- e.g. a <- vectorOf 2 (elements ['A'..'Z'])
         z <- elements [
             Oper Plus x y
             , Oper Minus x y
