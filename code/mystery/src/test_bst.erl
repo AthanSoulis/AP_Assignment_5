@@ -167,8 +167,8 @@ prop_size_union_soft() ->
 prop_size_union_strong() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         begin
-            L1 = to_sorted_list(eval(eval(T1))),
-            L2 = to_sorted_list(eval(eval(T2))),
+            L1 = keys(eval(eval(T1))),
+            L2 = keys(eval(eval(T2))),
             Common = [ X || X <- L1, lists:member(X, L2) ],
             T3 = union(eval(eval(T1)), eval(eval(T2))),
             equals( bst:size(eval(eval(T3))), bst:size(eval(eval(T1))) + bst:size(eval(eval(T2))) - length(Common))
