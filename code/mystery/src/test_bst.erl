@@ -27,7 +27,7 @@ int_value() -> eqc_gen:int().
 bst(Key, Value) ->
     ?LAZY(eqc_gen:frequency([
         {1,{call,bst,empty,[]}},
-        {4,?LETSHRINK(D, bst(Key, Value), {call,bst,insert,[atom_key(),int_value(), D]})}
+        {4,?LETSHRINK([D], [bst(Key, Value)], {call,bst,insert,[atom_key(),int_value(), D]})}
     ])).
 
 
@@ -184,7 +184,7 @@ prop_insert_insert() ->
                            false -> insert(eval(K2), eval(V2), insert(eval(K1), eval(V1), eval(T)))
                        end)).
 
-% assert that after deleting a key from the bst, we cannot delete it again if we try or a new key is deleted
+% assert that after deleting a key from the bst we either cannot delete it again if we try, or a new key is deleted
 prop_delete_delete() ->
     ?FORALL({K1, K2, T},
             {atom_key(), atom_key(), bst(atom_key(), int_value())},
