@@ -8,6 +8,8 @@ import qualified ExprEval as E
 --replacing Var arbitrary (and a <- arbitrary) with something like Var elements ['A'..'E']
 --remedies the issue mentioned below but also reduces generality
 --both versions work fine
+
+--quality could also be further improved on by using frequency, etc.
 exprN :: Int -> Gen Expr
 exprN 0 = oneof [fmap Const arbitrary, fmap Var arbitrary]
 exprN n = oneof 
