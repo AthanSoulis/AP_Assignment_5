@@ -23,33 +23,13 @@ atom_key() -> eqc_gen:elements([a,b,c,d,e,f,g,h]).
 
 int_value() -> eqc_gen:int().
 
-%% partially symbolic generator for bst
-% bst(Key, Value) ->
-%     ?LET(KVS, eqc_gen:list({Key, Value}),
-%          {call, lists, foldl, [            
-%                     fun({K,V}, T) -> {call, bst, insert, [K, V, T]} end,
-%                      {call, bst, empty, []},
-%                      KVS]}
-%                     ).
-
-% the above generator is only partially symbolic because of the use of an anonymous function
-% to remedy this, we tried rewriting the generator (below) to avoid anonymous functions
-% the code above just folds over a list of key-value-pairs with the insertion operator
-% the code below mimics this behaviour using pattern matching
-
-% the proplem with this "true" symbolic generator is that it nests arbitrarily many symbolic calls
-% when evaluating this we need to nest equally many evals
-% while this would in theory be possible we think this is a really bad approach and discarded the idea,
-% instead sticking with the only partially symbolic generator above
-
-% this also confirmed our suspicion about the double eval use below.
-
 %%% fully symbolic generator for bst
 bst(Key, Value) ->
     ?LAZY(eqc_gen:frequency([
         {1,{call,bst,empty,[]}},
         {4,?LETSHRINK(D, bst(Key, Value), {call,bst,insert,[atom_key(),int_value(), D]})}
     ])).
+
 
 
 % checking the quality of our generators
@@ -134,7 +114,7 @@ prop_union_post() ->
             T3 = union(eval(T1), eval(T2)),
             L3 = to_sorted_list(T3),
             %not sure if this is allowed since this is kinda mixing model based testing into it
-            %but it's considerably easier to do than writing it properly
+            %but it's considerably easier to do than writing it "properly"
             equals(L3, sorted_union(L2, L1))
         end).
 
@@ -160,7 +140,7 @@ prop_size_insert_strong() ->
 prop_size_empty() ->
     eqc:equals(bst:size(eval(empty())), 0).
 
-% size of a bst after a deletion is smaller or equal(no key found) than before
+% size of a bst after a deletion is smaller or equal (no key found) than before
 prop_size_delete_soft() ->
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
         bst:size(delete(eval(K), eval(T))) =< bst:size(eval(T))).
@@ -173,7 +153,7 @@ prop_size_delete_strong() ->
                     _ -> eqc:equals(bst:size(delete(eval(K), eval(T))), bst:size(eval(T))-1)
                 end).
 
-% size of a bst after a union is smaller(common entries) or equal than the sum of the sizes of both bsts
+% size of a bst after a union is smaller (common entries) or equal than the sum of the sizes of both bsts
 prop_size_union_soft() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         bst:size(union(eval(T1), eval(T2))) =< bst:size(eval(T1)) + bst:size(eval(T2))
