@@ -37,6 +37,16 @@ bst(Key, Value) ->
 %         {call, test_bst}).
 
 %implement quality check for gen
+
+prop_measure() ->
+    ?FORALL({T}, {bst(atom_key(), int_value())},
+        eqc:collect(bst:size(eval(eval(T))), true)).
+
+prop_aggregate() ->
+    ?FORALL({T}, {bst(atom_key(), int_value())},
+        eqc:aggregate(eqc_symbolic:call_names(T), true)).
+
+
 %perhaps also letshrink
 
 
@@ -149,12 +159,20 @@ prop_size_delete_strong() ->
                     _ -> eqc:equals(bst:size(delete(eval(eval(K)), eval(eval(T)))), bst:size(eval(eval(T)))-1)
                 end).
 
-prop_size_union() ->
+prop_size_union_soft() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         bst:size(union(eval(eval(T1)), eval(eval(T2)))) =< bst:size(eval(eval(T1))) + bst:size(eval(eval(T2)))
     ).
 
-
+prop_size_union_strong() ->
+    ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
+        begin
+            L1 = to_sorted_list(eval(eval(T1))),
+            L2 = to_sorted_list(eval(eval(T2))),
+            Common = [ X || X <- L1, lists:member(X, L2) ],
+            T3 = union(eval(eval(T1)), eval(eval(T2))),
+            equals( bst:size(eval(eval(T3))), bst:size(eval(eval(T1))) + bst:size(eval(eval(T2))) - length(Common))
+        end).
 
 obs_equals(T1, T2) ->
      eqc:equals(to_sorted_list(eval(eval(T1))), to_sorted_list(eval(eval(T2)))).
@@ -206,17 +224,6 @@ prop_union_model() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         equals(model(union(eval(eval(T2)), eval(eval(T1)))),
         sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
-
-
-
-prop_measure() ->
-    ?FORALL({T}, {bst(atom_key(), int_value())},
-        eqc:collect(bst:size(eval(eval(T))), true)).
-
-prop_aggregate() ->
-    ?FORALL({T}, {bst(atom_key(), int_value())},
-        eqc:aggregate(eqc_symbolic:call_names(T), true)).
-
 
 
 -spec delete_key(Key, [{Key, Value}]) -> [{Key, Value}].
