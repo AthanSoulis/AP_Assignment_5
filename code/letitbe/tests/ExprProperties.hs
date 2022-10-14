@@ -32,9 +32,11 @@ instance Arbitrary Expr where
 --asignment was really unspecific in what exactly was required
 --the current implementation makes sense to me but involves a lot of guesswork
 prop_eval_simplify :: Expr -> Property
-prop_eval_simplify x = --E.evalTop x === (E.evalTop $ E.simplify x) but:
-   --simplify can eval expr that evalTop cant
-   --specifically multiplication with 0 and unused let binding
+prop_eval_simplify x = 
+   -- collect (len x 0) $  (E.evalTop $ E.simplify x) === E.evalTop x 
+   -- BUT:
+   -- Simplify can eval expr that evalTop cant.
+   -- Specifically multiplication with 0 and unused let binding
    collect (len x 0) $
    let simp = (E.simplify x) in let res = (E.evalTop x) in case res of
             Left _ -> True === True --no way to check this
