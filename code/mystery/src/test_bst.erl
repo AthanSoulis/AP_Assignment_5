@@ -23,7 +23,7 @@ atom_key() -> eqc_gen:elements([a,b,c,d,e,f,g,h]).
 
 int_value() -> eqc_gen:int().
 
-%% symbolic generator for bst
+%% partially symbolic generator for bst
 bst(Key, Value) ->
     ?LET(KVS, eqc_gen:list({Key, Value}),
          {call, lists, foldl, [            
@@ -32,12 +32,32 @@ bst(Key, Value) ->
                      KVS]}
                     ).
 
+% the above generator is only partially symbolic because of the use of an anonymous function
+% to remedy this, we tried rewriting the generator (below) to avoid anonymous functions
+% the code above just folds over a list of key-value-pairs with the insertion operator
+% the code below mimics this behaviour using pattern matching
+
+% the proplem with this "true" symbolic generator is that it nests arbitrarily many symbolic calls
+% when evaluating this we need to nest equally many evals
+% while this would in theory be possible we think this is a really bad approach and discarded the idea,
+% instead sticking with the only partially symbolic generator above
+
+% this also confirmed our suspicion about the double eval use below.
+
+%%% fully symbolic generator for bst
 % bst(Key, Value) ->
 %     ?LET(KVS, eqc_gen:list({Key, Value}),
-%         {call, test_bst}).
+%         {call, test_bst, tree, [{call, bst, empty, []}, KVS]}).
 
-%implement quality check for gen
+% tree(T, []) -> T;
+% tree(T, [{K, V} | Xs]) -> {call, test_bst, tree, [{call, bst, insert, [K, V, T]}, Xs]}.
 
+% %tree(T, [{K, V} | Xs]) -> tree({call, bst, insert, [K, V, T]}, Xs).
+
+
+
+% checking the quality of our generators
+% quality could be improved using frequency, shrinking etc..
 prop_measure() ->
     ?FORALL({T}, {bst(atom_key(), int_value())},
         eqc:collect(bst:size(eval(eval(T))), true)).
@@ -47,11 +67,9 @@ prop_aggregate() ->
         eqc:aggregate(eqc_symbolic:call_names(T), true)).
 
 
-%perhaps also letshrink
-
 
 %%% we are unsure why eval needs to be used twice in the properties
-%%% we think it might be because of the nested symbolic call inside the genereator
+%%% we believe it to be because of the nested symbolic call inside the genereator
 
 %%% invariant properties
 
@@ -60,17 +78,18 @@ prop_arbitrary_valid() ->
     ?FORALL(T, bst(atom_key(), int_value()),
             valid(eval(eval(T)))).
 
-% if we insert into a valid tree it stays valid
+prop_empty_valid() ->
+    valid(empty()).
+
+% operations on valid trees should produce valid trees
 prop_insert_valid() ->
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             valid (insert(eval(eval(K)), eval(eval(V)), eval(eval(T))))).
 
-prop_empty_valid() ->
-    eqc:equals(valid(empty()), valid(leaf)).
-
 prop_delete_valid() ->
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
             valid (delete(eval(eval(K)), eval(eval(T))))).
+
 prop_union_valid() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         valid(union (eval(eval(T1)), eval(eval(T2))))).
@@ -114,7 +133,7 @@ prop_find_post_absent() ->
             {atom_key(), bst(atom_key(), int_value())},
             eqc:equals(find(eval(eval(K)), delete(eval(eval(K)), eval(eval(T)))), nothing)).
 
-
+% unionized tree should contain all and only all unique elements from both trees
 prop_union_post() -> 
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         begin
@@ -137,6 +156,7 @@ prop_size_insert_soft() ->
     ?FORALL({K, V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
             bst:size(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))) >= bst:size(eval(eval(T)))).
 
+% exact size calculation, stronger than above property
 prop_size_insert_strong() -> 
     ?FORALL({K,V, T}, {atom_key(), int_value(), bst(atom_key(), int_value())},
         case find(eval(eval(K)), eval(eval(T))) of 
@@ -145,13 +165,13 @@ prop_size_insert_strong() ->
         end).
 
 prop_size_empty() ->
-    % size (empty()) == 0
     eqc:equals(bst:size(eval(eval(empty()))), 0).
 
 prop_size_delete_soft() ->
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
         bst:size(delete(eval(eval(K)), eval(eval(T)))) =< bst:size(eval(eval(T)))).
 
+% exact size calculation, stronger than above property
 prop_size_delete_strong() ->
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
                 case find(eval(eval(K)), eval(eval(T))) of 
@@ -164,6 +184,7 @@ prop_size_union_soft() ->
         bst:size(union(eval(eval(T1)), eval(eval(T2)))) =< bst:size(eval(eval(T1))) + bst:size(eval(eval(T2)))
     ).
 
+% exact size calculation, stronger than above property
 prop_size_union_strong() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         begin
@@ -199,6 +220,10 @@ prop_delete_delete() ->
 
 
 %%% -- Model based properties
+
+% while model based testing generally produces strong properties
+% we had to write the model ourselves, too. thus, mistakes in the
+% model could fail to reveal bugs in the implementations.
 model(T) -> to_sorted_list(T).
 
 prop_insert_model() ->
@@ -206,14 +231,15 @@ prop_insert_model() ->
             equals(model(insert(eval(eval(K)), eval(eval(V)), eval(eval(T)))),
                    sorted_insert(eval(eval(K)), eval(eval(V)), delete_key(eval(eval(K)), model(eval(eval(T))))))).
 
-%should probably use model(find...)
+%should perhaps use model(find...)
 prop_find_model() -> 
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
         equals(find(eval(eval(K)), eval(eval(T))),
         sorted_find(eval(eval(K)), model(eval(eval(T)))))).
 
 prop_empty_model() -> 
-        eqc:equals(model(empty()), sorted_empty()).
+        equals(model(empty()), 
+        sorted_empty()).
 
 prop_delete_model() -> 
     ?FORALL({K, T}, {atom_key(), bst(atom_key(), int_value())},
@@ -224,6 +250,7 @@ prop_union_model() ->
     ?FORALL({T1, T2}, {bst(atom_key(), int_value()), bst(atom_key(), int_value())},
         equals(model(union(eval(eval(T2)), eval(eval(T1)))),
         sorted_union(model(eval(eval(T1))), model(eval(eval(T2)))))).
+
 
 
 -spec delete_key(Key, [{Key, Value}]) -> [{Key, Value}].
